@@ -1,0 +1,1 @@
+iconv -f utf-8 -t utf-16le new_word.txt.todo > new_word.txt

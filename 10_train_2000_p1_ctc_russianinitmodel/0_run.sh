@@ -1,0 +1,14 @@
+ky exp submit PtJob \
+-d french_ctc_loss \
+-n train-fr-ctc-loss \
+--isModelTest \
+--proID 2193 \
+--modelPath /yrfs4/asrdictt/hjwang11/ \
+-e "train_multi_local_v100.sh" \
+-l train_multi_local_v100.log \
+-i reg.deeplearning.cn/ayers/nvidia-cuda:9.2-cudnn7-devel-centos7-py2 \
+-g 8 \
+-w 1 \
+-k TeslaV100-PCIE-48GB \
+--useGpu \
+-r dlp3-asrdictt-car-reserved

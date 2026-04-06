@@ -1,0 +1,1 @@
+./res_pack ./rnnt_pack_1211.cfg

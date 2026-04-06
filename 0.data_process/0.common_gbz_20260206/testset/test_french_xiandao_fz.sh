@@ -1,0 +1,3 @@
+source /home3/asrprg/yjzhang20/anaconda3/bin/activate torch1.7
+export PATH=$PATH:/opt/compiler/ffmpeg-5.0.1
+python /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/test.py /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/./decode_result/whisper_ASR_AST_SGD/epoch-1-models_avg_update19w-20w_noPad_noTemper_noSupress_beam5/french/xiandao_fz.csv /raw7/asrmlg/zpxie2/mlg_dictt/2023/多语种听写数据提交_2022年35语种先导测试集_测试集_20230116_463.39H_263516条_李亦秋_谢智鹏/多语种听写数据提交_2022年35语种先导测试集_测试集_20230116_463.39H_263516条_李亦秋_谢智鹏/2022先导35语种测试集备份-仿真/法语听写-仿真5.64H fr /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/../outputs/whisper_ASR_AST_epoch2_SGD/checkpoints/models_avg_update19w-20w.pt

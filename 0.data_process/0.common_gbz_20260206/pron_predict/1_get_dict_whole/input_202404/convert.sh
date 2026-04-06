@@ -1,0 +1,1 @@
+iconv -f utf-8 -t utf-16le oovs.txt.jike_yanshou.todo > new_word.txt

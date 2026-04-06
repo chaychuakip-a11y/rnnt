@@ -1,0 +1,1 @@
+/work1/asrdictt/taoyu/bin/ngram-count -vocab ./french_ly1213h_ly2k_xw696h_openSRC412h_fz1655h_ttsMusicVideoPoi_v16.word_dict_phone_nosp.add_pred -order 1 -text ./french_ly1213h_ly2k_xw696h_openSRC412h_fz1655h_ttsMusicVideoPoi_v16.word_dict_phone_nosp.add_pred.wlist -lm french_ly1213h_ly2k_xw696h_openSRC412h_fz1655h_ttsMusicVideoPoi_v16.word_dict_phone_nosp.add_pred.1gram

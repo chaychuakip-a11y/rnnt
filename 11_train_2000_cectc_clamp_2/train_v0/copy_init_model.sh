@@ -1,0 +1,1 @@
+cp -rp /raw15/asrdictt/permanent/hjwang11/multilingual/french/rnnt/am/11_train_2000_cectc/train_v0/model.iter7.part9 ./model.init

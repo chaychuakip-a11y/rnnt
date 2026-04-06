@@ -1,0 +1,1 @@
+cp -rp /yrfs4/asrdictt/wwyang9/car_asr/V2_model_work/local_asr/rnnt/french/11_train_2000_cectc_clamp/train_v8/model.iter0.part6 ./model.init

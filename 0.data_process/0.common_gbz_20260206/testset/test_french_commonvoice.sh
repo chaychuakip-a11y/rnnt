@@ -1,0 +1,3 @@
+source /home3/asrprg/yjzhang20/anaconda3/bin/activate torch1.7
+export PATH=$PATH:/opt/compiler/ffmpeg-5.0.1
+python /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/test.py /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/./decode_result/whisper_ASR_AST_SGD/epoch-1-models_avg_update19w-20w_noPad_noTemper_noSupress_beam5/french/commonvoice.csv /raw7/asrmlg/zpxie2/Multilingual_ASR_project1.0_testset/Open_source_testset_processed_new/french/kaiyuan_french_CommonVoice9_16041 fr /train23/asrmlg/temporary/ynsong/mlg_large_model/whisper/hulk_train_blance_batch/tests/../outputs/whisper_ASR_AST_epoch2_SGD/checkpoints/models_avg_update19w-20w.pt

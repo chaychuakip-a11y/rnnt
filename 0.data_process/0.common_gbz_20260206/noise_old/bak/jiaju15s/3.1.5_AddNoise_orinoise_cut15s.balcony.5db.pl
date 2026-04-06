@@ -1,0 +1,146 @@
+use strict;
+
+use lib "/work1/asrdictt/taoyu/sbin";
+use share_hadoop;
+
+my $jobname0     = "AddNoise_orinoise_cut15s.balcony";
+my $jobqueue     = "mkws";
+my $num_reduce   = 2;
+my $in_blocksize = 512*1024*1024;
+my $block_size   = 64*1024*1024;
+my $replication  = 1;
+
+#my @hdir_src     = (
+#                   "/workdir/asrmlg/dasrmlg/ddye2/gmkws/japanese/dnnfa/japanese_tx_2165H_fb75_dnnfa/*-part-0000[0-3]*",  # 1/2
+#                   );
+my @hdir_src     = (
+                   "/workdir/asrmlg/gasrmlg/ddye2/italian_local/triphone_dnnfa/italy_zx_tx_10832h_triphone_dnnfa/*-part-0002[5-9]*",  # 1/2
+                   );
+my $hdir_out     = "/workdir/asrmlg/gasrmlg/ddye2/italian_local/triphone_dnnfa/italy_zx_tx_541h_triphone_dnnfa.orinoise_cut15s.balcony_5db";
+my $hdir_src     = join(" -input ", @hdir_src);
+
+my $noisedata    = "hdfs://mycluster/workdir/asrmlg/dasrmlg/ddye2/noise_huanxing/orinoise_cut15s.balcony/orinoise_cut15s.balcony.scp.1.pak";#IN
+#my $scp_wav      = "labscp/lab.scp";  #IN
+my $mlf_seed     = "./seed.mlf"; #IN
+
+my @snr          = (5);#SET
+my @ratio        = (1);#SET
+my $output_type  = 2;#SET
+my $nSplit       = scalar(@snr);
+
+my @splits       = (0..$#snr);
+if(@ARGV >= 1)
+{
+	@splits = @ARGV;
+	print "split: @splits\n";
+}
+
+my $bin_stream       = "/work1/asrdictt/taoyu/bin/streamingAC-2.5.0.jar";
+my $bin_addnoise     = "/work1/asrdictt/taoyu/bin/AddNoise";
+my $bin_easytraining = "/work1/asrdictt/taoyu/bin/easytraining";
+my $bin_selectrecord = "/work1/asrdictt/taoyu/bin/selectrecord";
+my $bin_selecttail   = "/work1/asrdictt/taoyu/bin/selecttail";
+my $bin_addtail      = "/work1/asrdictt/taoyu/bin/addtail";
+
+my @cmd_map;
+my @cmd_red;
+my @files;
+my $cmd_map;
+my $cmd_red;
+my $files;
+my $cmd;
+
+#if(!-e "$scp_wav.done.split$nSplit")
+#{
+#	!system("$bin_easytraining -SplitScript $scp_wav $nSplit") || die "error to split file: $scp_wav, maybe the file does not exist\n";
+#	system("touch $scp_wav.done.split$nSplit");
+#}
+
+@snr == @ratio || die "Error: count mismatch\n";
+
+foreach my $i(0..$#snr)
+{
+	my $j = $i + 1;
+	my $jobname      = $jobname0."_snr$snr[$i]";
+	my $hdir_out_cur = $hdir_out;#$hdir_out."/snr$snr[$i]"
+	my $snr_cur      = $snr[$i];
+	my $seed_cur     = 0;
+	my $ratio_cur    = $ratio[$i];
+	#my $scp_wav_cur  = $scp_wav.".$j";
+
+	@cmd_map = (
+	#::CmdToLocal("$bin_selectrecord $scp_wav_cur"),
+	::CmdToLocal("$bin_selecttail wav mlf_sy mlf_fa_ph"),
+	::CmdToLocal("$bin_addtail $mlf_seed randseed"),
+	::CmdToLocal("$bin_addnoise -n $noisedata -u -d -m snr_8khz -r $seed_cur -s $snr_cur -multiple $ratio_cur -output_type $output_type"),
+	#::CmdToLocal("$bin_randname"),
+	);
+
+	@cmd_red = (
+	#::CmdToLocal("$bin_randnamered"),
+	);
+
+	@files   = (
+	$bin_selectrecord,
+	$bin_selecttail,
+	$bin_addtail,
+	#$scp_wav_cur,
+	$mlf_seed,
+	$bin_addnoise,
+	$noisedata,
+	);
+
+	$cmd_map = join(" | ", @cmd_map);
+	$cmd_red = join(" | ", @cmd_red);
+
+	if(@cmd_map > 1)
+	{
+		open(OUT, ">", "./mapper.$jobname.sh") || die $!;
+		print OUT "#!/bin/bash\n";
+		print OUT "$cmd_map\n";
+		close OUT;
+		push(@files, "./mapper.$jobname.sh");
+		$cmd_map = "bash ./mapper.$jobname.sh";
+	}
+
+	if(@cmd_red > 1)
+	{
+		open(OUT, ">", "./reducer.$jobname.sh") || die $!;
+		print OUT "#!/bin/bash\n";
+		print OUT "$cmd_red\n";
+		close OUT;
+		push(@files, "./reducer.$jobname.sh");
+		$cmd_red = "bash ./reducer.$jobname.sh";
+	}
+
+	$files = join(",", @files);
+
+	$cmd = "hadoop jar $bin_stream "
+	."-Dmapreduce.reduce.java.opts=\"-Xmx4096m\" "
+	#."-Dmapreduce.map.cpu.vcores=$thread_nums "
+	."-Dmapreduce.map.failures.maxpercent=20 "
+	."-Dmapreduce.job.queuename=$jobqueue "
+	."-Dmapreduce.job.name=$jobname "
+	."-Dmapreduce.job.reduces=$num_reduce "
+	."-Dmapreduce.map.memory.mb=4000 "
+	."-Dmapreduce.reduce.memory.mb=1500 "
+	."-Ddc.input.block.size=$in_blocksize "
+	."-Ddfs.blocksize=$block_size "
+	."-Ddfs.replication=$replication "
+	."-files \"$files\" "
+	."-input $hdir_src "
+	."-output $hdir_out_cur "
+	;
+
+	$cmd .= "-mapper \"$cmd_map\" " if(@cmd_map > 0);
+	$cmd .= "-reducer \"$cmd_red\" " if(@cmd_red > 0);
+
+	::RemoveHadoopDirIfExist($hdir_out_cur);
+	::PR($cmd);
+	::SuccessOrDie("$hdir_out_cur");
+}
+
+#foreach my $i(1..$nSplit)
+#{
+#	system("rm -rf $scp_wav.$i");
+#}

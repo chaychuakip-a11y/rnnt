@@ -1,0 +1,1 @@
+python encrypt_am_local.py rnnt_french_gb_hjwang11_20260310_wcf_finetune_i7p5.bin

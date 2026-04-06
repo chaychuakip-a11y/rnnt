@@ -1,0 +1,16 @@
+ky exp submit PtJob \
+-d fr_clamp \
+-n train-fr-clamp \
+--isModelTest \
+--proID 2193 \
+--modelPath /raw15/asrdictt/permanent/hjwang11/multilingual/french/rnnt/am \
+-e "train_multi_local_a100.sh" \
+-l train_multi_local_a100.log \
+-i reg.deeplearning.cn/ayers/nvidia-cuda:9.2-cudnn7-devel-centos7-py2 \
+-g 8 \
+-w 2 \
+-k TeslaA100-PCIE-48GB \
+--useGpu \
+-r dlp3-asrdictt-car-reserved \
+--weChatOnStatus \
+-s 'dlp2-101-012 dlp2-101-013'
