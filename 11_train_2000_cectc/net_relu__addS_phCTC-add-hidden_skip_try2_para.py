@@ -22,7 +22,7 @@ from warp_rnnt_fa import rnnt_loss
 # from asr.layers.mochat_decoder import MoChADecoder
 import struct
 
-word_dict = "/work1/asrdictt/zhyou2/workspace/yewu/chezai_syllable_allnodes/states_list.all"
+word_dict = "/yrfs4/asrdictt/tyliu23/am/hu/ubctc/1_mle_mfc/final_s9k/hmmlist.final"
 voc_size = 2000+1
 
 class ACC0(nn.Module):
@@ -605,7 +605,7 @@ class Transducer(nn.Module):
             vocab_size=voc_size+1
             )
             
-        self.phone_dim = 41
+        self.phone_dim = 104  # 匈牙利语FA音素数量（韩语FA模型, 9004状态/104 phones）
 
         self.phone_ce = phone_ce(256, self.phone_dim)
 

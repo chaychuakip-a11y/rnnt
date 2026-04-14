@@ -1,9 +1,9 @@
 ky exp submit PtJob \
--d fr_phcectc \
--n train-fr-phcectc \
+-d hu_phcectc \
+-n train-hu-phcectc \
 --isModelTest \
 --proID 2193 \
---modelPath /yrfs4/asrdictt/hjwang11/ \
+--modelPath /yrfs4/asrdictt/tyliu23/ \
 -e "train_multi_local_a100.sh" \
 -l train_multi_local_a100.log \
 -i reg.deeplearning.cn/ayers/nvidia-cuda:9.2-cudnn7-devel-centos7-py2 \
