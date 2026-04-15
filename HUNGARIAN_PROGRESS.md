@@ -1,38 +1,94 @@
-# 匈牙利语适配进展报告 (2026-04-13)
+# 匈牙利语适配进展报告 (2026-04-16)
 
 ## 1. 项目目标
 - **语种**: 匈牙利语 (Hungarian)
 - **场景**: 车载项目适配 (Car-borne ASR)
-- **子词规模**: BPE 2000 (已根据硬件及推理延迟要求进行优化)
-- **核心约束**: `<blank>` 必须固定在 **ID 0**，以支持 Frame Skipping (跳帧) 机制。
+- **子词规模**: BPE 2000
+- **核心约束**: `<blank>` 固定在 **ID 0**，支持 Frame Skipping (跳帧) 机制
 
-## 2. 已完成工作 (数据准备阶段)
+---
 
-### 2.1 目录结构
-- 创建了专用处理目录 `1.get_mlf_sp_hu/`。
-- 从 `common` 目录同步了基础处理脚本，并进行了针对性适配。
+## 2. 训练流水线
 
-### 2.2 文本清洗逻辑 (`get_sent_mlf.py`)
-- **字符集适配**: 加入了匈牙利语特有字符 `á, é, í, ó, ö, ő, ú, ü, ű` 及其小写支持。
-- **编码修正**: 自动将常见的 `õ`/`Õ` 错误编码替换为正确的 `ő`。
-- **格式支持**: 修改了段落识别逻辑，由原来的 `.mlf_sy"` 适配为本地标签常见的 **`.lab"`** 后缀。
-- **鲁棒性增强**: 增加了对 `#!MLF!#` 文件头和单独点号 `.` 的过滤，防止非文本行干扰词表训练。
+```
+0_get_init_pt_rand.sh       俄语模型提取 Encoder → model.init
+        ↓
+10_train_2000_p1_ctc        Word CTC 预训练（SP 单列标签）
+        ↓
+11_train_2000_ce            Phone CE 训练（CE 单列标签）
+        ↓
+11_train_2000_cectc         RNNT + CTC + Phone-CE 联合训练（mix 双列标签）
+        ↓
+11_train_2000_cectc_clamp   数值范围限制 (QAT)
+        ↓
+12_quant                    8-bit 量化
+```
 
-### 2.3 词表训练脚本 (`train_spm.py`)
-- 基于项目惯例编写了 BPE 训练脚本。
-- **参数配置**: 
-    - `vocab_size=2000`
-    - `character_coverage=0.99999999`
-    - `user_defined_symbols=["<blank>", "<pad>", "<SIL>"]` (确保 `<blank>` 为 ID 0)。
-- **语料规模**: 目前已准备约 **50 万行** 匈牙利语清洗后的文本 (`out.mlf_sy.sent`)。
+---
 
-## 3. 下一步计划
-1. **训练词表**: 运行 `python train_spm.py` 生成 `.model` 文件。
-2. **标签编码**: 修改 `spm_encode.sh` 或 `get_sent_mlf.py` 生成最终的 `out.mlf_sy.mlf_sp` 训练标签。
-3. **模型适配**: 修改 `11_train_2000_cectc` 目录下的 `net_*.py`，将 `voc_size` 设为 2000，并调整输出层维度。
+## 3. 已完成工作
 
-## 4. 修改文件清单
-- `HUNGARIAN_TODO.md`: 任务清单。
-- `HUNGARIAN_PROGRESS.md`: 进度报告。
-- `1.get_mlf_sp_hu/get_sent_mlf.py`: 适配后的清洗脚本。
-- `1.get_mlf_sp_hu/train_spm.py`: BPE 训练脚本。
+### 3.1 数据准备 (`1.get_mlf_sp_hu/`)
+- 匈牙利语字符集适配（`á é í ó ö ő ú ü ű` 及编码修正 `õ→ő`）
+- BPE 训练脚本 `train_spm.py`（vocab_size=2000，`<blank>` 固定 ID 0）
+- SPM encode/decode 脚本
+
+### 3.2 Pfile 制作 (`2.down_pfile_hu/`) ✅ 内网已完成
+- **CE pfile**（`ce/`）: FA 对齐的 phone 帧级标签 + Fbank 特征，已生成 `lib_fb40/lab.pfileN`
+- **SP pfile**（`sp/lib/`）: BPE 序列标签，已生成 `lab.pfile.N`（原始）和 `lab.pfileN`（对齐重排后）
+- **mix pfile**（`ce/lib_fb40/mix/`）: CE(col1) + SP(col2) 双列合并，已验证
+  - `pfile_info` 确认：2 labels，句子数/帧数正常
+
+#### 关键脚本改动（相对 cz 模板）
+| 文件 | 改动 |
+|------|------|
+| `ce/102_get_pfile_from_hdfs_ce.pl` | 替换 HU 路径；去掉 qnnorm（由 103 负责） |
+| `ce/103.create_norm.pl` | 填入 HU lib_fb40 路径 |
+| `sp/9.down_pfile_spm2.0k.pl` | 替换 HU 路径；mlf 按 part 读（`$num` 在路径中） |
+| `15.pfile_paste.pl` | 改为 3 参数（`sp_dir ce_dir split_id`），适配 HU 目录结构 |
+| `run.sh` | `sp_dir` / `ce_dir` 分离，内联实际路径 |
+
+### 3.3 训练配置 (`10_train_2000_p1_ctc_russianinitmodel/`)
+- 新增 `config_all.ini`（基于法语 cz 模板）
+- 数据路径：`DataDir`=CE lib_fb40，`LabelDir`=SP lib（单列 BPE），`NormFile`=fea.norm0
+- 验证集：`ValidationDatadir`=SP lib（需在 SP lib 下建 fea.pfile0 软链接）
+- 网络文件 `net_relu__addS_phce-add-hidden_skip_try2_wordctc.py`：
+  - `voc_size=2001` ✓（BPE 2000 + blank）
+  - `phone_dim=41`：CE 分支 loss 已注释，此步不影响训练
+
+---
+
+## 4. 待完成事项
+
+### Step 10: Word CTC 预训练
+- [ ] 修复训练脚本 `train_multi_local_v100.sh` 的 bashrc/conda 环境路径
+- [ ] 修复 `0_get_init_pt_rand.sh` 的 bashrc/conda 环境路径
+- [ ] 运行 `bash 0_get_init_pt_rand.sh` 生成 `train_onlywordCTC_v0/model.init`
+- [ ] 在 SP lib 下建软链接：`ln -s ce/lib_fb40/fea.pfile0 sp/lib/fea.pfile0`（验证集用）
+- [ ] 确认 `asr/c.so-v` 存在
+- [ ] 启动训练
+
+### Step 11: CE 训练
+- [ ] 配置 `11_train_2000_ce/config_all.ini`（CE 单列标签）
+- [ ] 确认 `phone_dim` 与匈牙利语 phone 数量一致
+- [ ] 从 Step 10 输出初始化
+
+### Step 11: CECTC 联合训练
+- [ ] 配置 `11_train_2000_cectc/config_all.ini`（mix 双列标签）
+- [ ] 从 Step 11 CE 输出初始化
+
+### Step 12: 量化
+- [ ] 配置 `12_quant/`
+
+---
+
+## 5. 关键路径（内网）
+
+| 类型 | 路径 |
+|------|------|
+| CE pfile | `/yrfs4/asrdictt/tyliu23/am/hu/rnnt/2.down_pfile_hu/ce/lib_fb40/` |
+| SP pfile | `/yrfs4/asrdictt/tyliu23/am/hu/rnnt/2.down_pfile_hu/sp/lib/` |
+| mix pfile | `/yrfs4/asrdictt/tyliu23/am/hu/rnnt/2.down_pfile_hu/ce/lib_fb40/mix/` |
+| 俄语初始模型 | `/train8/asrmlg/ddye2/RNNT/russian/russian_gongban_xd_20250107/7_train_zhy_step2_3_ctc/out_train_002/model.iter1.part6` |
+| SPM states_list | `/raw15/asrdictt/permanent/tyliu23/hu/rnnt/spm/states_list.hu.spm2.0k` |
+| SPM map | `/raw15/asrdictt/permanent/tyliu23/hu/rnnt/spm/states_list.hu.spm2.0k.map` |

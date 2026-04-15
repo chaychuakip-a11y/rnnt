@@ -3,7 +3,7 @@ my $bin_qnnorm     = "/work1/asrdictt/taoyu/tools/QN/bin/qnnorm";
 my $bin_pfile_info = "/work1/asrdictt/taoyu/tools/QN/bin/pfile_info";
 
 # 匈牙利语 CE pfile 输出目录  ### set
-my $dir_0      = "PLACEHOLDER_HU_PFILE_OUT_DIR/lib_fb40";
+my $dir_0      = "/raw15/asrdictt/permanent/tyliu23/hu/rnnt/traindata/car_hu_common_sp2.0k/lib_fb40";  ###set
 my $file_norm  = "$dir_0/fea.norm";    # 合并后的全局 norm 文件
 my $nSplit     = 10;
 
